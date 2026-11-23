@@ -11,7 +11,7 @@ const rooms = {}; // code -> { seats: [{ name, token } | null] x4, game, streams
 function push(room) {
   for (const st of room.streams) {
     const seats = room.seats.map((s, i) => s && { name: s.name, online: [...room.streams].some(x => x.seat === i) });
-    const data = { seats, you: st.seat, game: G.view(room.game, st.seat) };
+    const data = { seats, you: st.seat, now: Date.now(), game: G.view(room.game, st.seat) };
     st.res.write('data: ' + JSON.stringify(data) + '\n\n');
   }
 }
@@ -54,9 +54,16 @@ function handle(body) {
     G.deal(room.game);
   } else {
     G.act(g, seat, body);
-    if (g.trick && g.trick.length === 4) setTimeout(() => { G.collect(g); push(room); }, 1500);
   }
+  step(room);
   return {};
+}
+
+// Timers: collect full tricks and play for anyone whose time runs out (so nobody can stall the table).
+function step(room) {
+  clearTimeout(room.timer);
+  const t = G.nextTimer(room.game, () => false);
+  if (t) room.timer = setTimeout(() => { t.run(); step(room); push(room); }, t.ms);
 }
 
 const server = http.createServer((req, res) => {

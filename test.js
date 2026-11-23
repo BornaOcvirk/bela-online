@@ -76,4 +76,12 @@ assert.throws(() => { const g = G.newGame(); G.deal(g); G.act(g, g.turn, { type:
   }
   assert.ok(botWins > 130, 'bots won only ' + botWins + '/200');
   console.log('bots beat random players in', botWins, '/ 200 games'); }
+
+// timers alone (everyone timing out) carry a hand to the end; players get a deadline, bots don't
+{ const g = G.newGame('otvorena'); G.deal(g);
+  let t = G.nextTimer(g, () => false);
+  assert.ok(t.ms >= G.TURN_MS && g.deadline > Date.now());
+  assert.strictEqual(G.nextTimer(g, () => true).ms < G.TURN_MS && g.deadline, null);
+  for (let k = 0; k < 100 && (t = G.nextTimer(g, () => false)); k++) t.run();
+  assert.ok(g.phase === 'done' || g.phase === 'over'); }
 console.log('ok');

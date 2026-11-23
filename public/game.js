@@ -7,6 +7,9 @@ const TRUMP_ORDER = '78QKXA9J', PLAIN_ORDER = '789JQKXA';            // weakest 
 const TRUMP_PTS = { J: 20, 9: 14, A: 11, X: 10, K: 4, Q: 3 }, PLAIN_PTS = { A: 11, X: 10, K: 4, Q: 3, J: 2 };
 const FOUR_PTS = { J: 200, 9: 150, A: 100, X: 100, K: 100, Q: 100 };
 const HAND = 162, STIGLJA = 90, TARGET = 1001;
+// Pace (ms): a player's time to act before a card is played for them, a bot's thinking time,
+// how long a full trick stays on the table, and the extra pause while zvanja are shown.
+const TURN_MS = 30000, BOT_MS = 1300, TRICK_MS = 2500, ZVANJA_MS = 4500;
 
 const suit = c => c[0], rank = c => c[1], team = s => s % 2;
 const points = (c, trump) => ((suit(c) === trump ? TRUMP_PTS : PLAIN_PTS)[rank(c)] || 0);
@@ -207,5 +210,17 @@ function botMove(g, seat) {
   return play(cheap(leg));
 }
 
-Object.assign(exports, { MODES, legal, trickWinner, zvanja, scoreHand, newGame, deal, act, collect, view, points, team, botMove, HAND });
+// The next timed step for whoever runs the game (server, or the phone offline): collect a full trick,
+// let a bot move, or play for a player whose time ran out. Sets g.deadline for players so everyone sees a countdown.
+function nextTimer(g, isBot) {
+  g.deadline = null;
+  if (g.phase === 'play' && g.trick.length === 4) return { ms: TRICK_MS, run: () => collect(g) };
+  if ((g.phase !== 'bid' && g.phase !== 'play') || g.turn == null) return null;
+  const firstLead = g.phase === 'play' && !g.last && !g.trick.length && g.zv?.team != null;
+  const ms = (isBot(g.turn) ? BOT_MS : TURN_MS) + (firstLead ? ZVANJA_MS : 0);
+  if (!isBot(g.turn)) g.deadline = Date.now() + ms;
+  return { ms, run: () => act(g, g.turn, botMove(g, g.turn)) };
+}
+
+Object.assign(exports, { nextTimer, TURN_MS, ZVANJA_MS, MODES, legal, trickWinner, zvanja, scoreHand, newGame, deal, act, collect, view, points, team, botMove, HAND });
 })(typeof module !== 'undefined' ? module.exports : (window.Bela = {}));
