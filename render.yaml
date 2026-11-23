@@ -1,0 +1,10 @@
+# Permanent hosting on Render.com (free): Dashboard → New → Blueprint → pick this repo → Apply.
+# The free plan sleeps after ~15 min without visitors; the first visit after that takes about a minute.
+services:
+  - type: web
+    name: bela-online
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /
