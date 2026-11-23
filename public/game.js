@@ -177,6 +177,7 @@ function view(g, seat) {
     v.counts = g.hands.map(h => h.length);
     v.legal = g.turn === seat && g.phase === 'play' ? legal(g.hands[seat], g.trick, g.trump) : [];
     v.bids = g.phase === 'bid' ? bidOptions(g) : [];
+    v.pts = g.won.map(cs => cs.reduce((p, c) => p + points(c, g.trump), 0)); // card points taken so far (tricks are public)
   }
   return v;
 }

@@ -37,6 +37,7 @@ for (let n = 0; n < 300; n++) {
       G.act(g, g.turn, { type: 'play', card: v.legal[Math.floor(Math.random() * v.legal.length)] });
     }
     const r = g.result, all = r.cards[0] + r.cards[1];
+    assert.strictEqual(G.view(g, 0).pts[0] + G.view(g, 0).pts[1], 152); // live points = every card, last-trick 10 not included
     assert.strictEqual(all, G.HAND); // raw card points incl. last trick
     assert.strictEqual(r.score[0] + r.score[1], (r.stiglja == null ? G.HAND : 252) + r.zv[0] + r.zv[1]);
   }

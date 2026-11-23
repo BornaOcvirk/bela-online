@@ -52,6 +52,14 @@ body.ingame .err{color:#ffb4a9}
 .scores div{text-align:center;line-height:1.05}.scores small{display:block;font-size:10px;letter-spacing:1.5px;color:#f3efe299}
 .scores b{font:700 22px var(--sans);font-variant-numeric:tabular-nums;display:block;min-width:2.2em}.scores .sep{color:#f3efe266}
 .meta{min-width:64px;text-align:right;font-size:11px;line-height:1.3;color:#f3efe299}
+/* points in this hand vs what the calling team needs to pass */
+.pass{margin:0 2px 8px;font-size:12px;color:#f3efe2b3;min-height:30px}
+.pass .pl{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.pass b{color:#fff;font-size:14px;font-variant-numeric:tabular-nums}
+.pbar{height:6px;border-radius:3px;background:#ffffff1f;margin-top:4px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--gold);border-radius:3px;transition:width .4s}
+.pass.ok .pbar i{background:#6fcf97}.pass.fell .pbar i{background:#ef7a6e}
+.pass .tagok{color:#6fcf97;font-weight:700}.pass .tagfell{color:#ef7a6e;font-weight:700}
 /* table */
 .table{position:relative;height:322px}
 .seat{position:absolute;display:flex;flex-direction:column;align-items:center;width:92px;text-align:center;line-height:1.15}
@@ -341,6 +349,15 @@ function renderGame() {
     <div class="scores" aria-label="Rezultat"><div><small>MI</small><b>${g.scores[mine]}</b></div><span class="sep">:</span><div><small>VI</small><b>${g.scores[1 - mine]}</b></div></div>
     <div class="meta">${MODES[g.mode][0]}<br>${local ? 'protiv botova' : 'soba ' + esc(me.room)}</div></header>`;
 
+  if (g.phase === 'bid' || g.phase === 'play') {
+    // Caller passes with more than half of all points (cards + counted zvanja + bela); last-trick 10 still to come.
+    const zvT = t => (g.zv?.team === t ? g.zv.sum : 0) + (g.bela?.[t] || 0);
+    const c = g.caller, tot = [0, 1].map(t => g.pts[t] + zvT(t)), need = Math.floor((Bela.HAND + zvT(0) + zvT(1)) / 2) + 1;
+    const left = Bela.HAND - g.pts[0] - g.pts[1], ok = c != null && tot[c] >= need, fell = c != null && tot[c] + left < need;
+    h += g.phase === 'bid' ? `<div class="pass"><div class="pl"><span>Bodovi u ruci</span><span>čeka se adut</span></div><div class="pbar"></div></div>`
+      : `<div class="pass ${ok ? 'ok' : fell ? 'fell' : ''}"><div class="pl"><span>Zvali ${MV(c)}: <b>${tot[c]}</b> / ${need} za prolaz ${ok ? '<span class="tagok">· prošli</span>' : fell ? '<span class="tagfell">· pad</span>' : ''}</span>
+        <span>${MV(1 - c)} <b>${tot[1 - c]}</b></span></div><div class="pbar"><i style="width:${Math.min(100, tot[c] / need * 100)}%"></i></div></div>`;
+  }
   h += `<section class="table ${myTurn ? 'myturn' : ''}">${[0, 1, 2, 3].map(seat).join('')}
     <div class="mid">${Object.entries(played).map(([s, c]) => cardHtml(c, mini[pos(+s)])).join('')}${g.phase === 'bid' && g.up && !myTurn ? cardHtml(g.up) : ''}</div>
     ${g.zv?.team != null && (g.phase === 'play' || g.phase === 'done') ? `<button class="zvb" onclick="zvOpen=!zvOpen;render()" aria-expanded="${zvOpen}"><span>Zvanja<b>${MV(g.zv.team)} ${g.zv.sum}</b></span>${zvOpen ? '▴' : '▾'}</button>
