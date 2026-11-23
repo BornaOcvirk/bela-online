@@ -3,7 +3,7 @@
 const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto'), os = require('os');
 const G = require('./public/game');
 const PORT = process.env.PORT || 3000, PUBLIC = path.join(__dirname, 'public');
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/manifest+json', '.png': 'image/png', '.woff2': 'font/woff2' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/manifest+json', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2' };
 
 // shortcut: rooms live in memory and are never cleaned up; a restart ends all games. Add expiry/persistence before public hosting.
 const rooms = {}; // code -> { seats: [{ name, token } | null] x4, game, streams: Set<{ res, seat }> }
