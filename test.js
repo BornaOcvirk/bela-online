@@ -1,6 +1,6 @@
 // Run: node test.js
 const assert = require('assert');
-const G = require('./game');
+const G = require('./public/game');
 
 // play rules (trump = H)
 assert.deepStrictEqual(G.legal(['P7', 'PX', 'HJ'], ['P8'], 'H'), ['PX']);            // must beat the led suit
@@ -58,4 +58,22 @@ assert.throws(() => { const g = G.newGame(); G.deal(g); G.act(g, g.turn, { type:
   const other = 'HKPT'.replace(us, '')[0];
   G.act(g, d, { type: 'bid', suit: other });
   assert.ok(g.hands[d].includes(up) && g.trump === other && g.caller === d % 2); }
+
+// bots: always legal, and team 0 bots beat team 1 random players most of the time
+{ let botWins = 0;
+  for (let n = 0; n < 200; n++) {
+    const g = G.newGame(G.MODES[n % 2]);
+    for (let k = 0; g.winner == null && k < 100; k++) {
+      G.deal(g);
+      while (g.phase === 'bid' || g.phase === 'play') {
+        if (g.turn == null) { G.collect(g); continue; }
+        if (g.turn % 2 === 0 || g.phase === 'bid') { G.act(g, g.turn, G.botMove(g, g.turn)); continue; }
+        const leg = G.view(g, g.turn).legal;
+        G.act(g, g.turn, { type: 'play', card: leg[Math.floor(Math.random() * leg.length)] });
+      }
+    }
+    if (g.winner === 0) botWins++;
+  }
+  assert.ok(botWins > 130, 'bots won only ' + botWins + '/200');
+  console.log('bots beat random players in', botWins, '/ 200 games'); }
 console.log('ok');

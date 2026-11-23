@@ -82,6 +82,7 @@ input{width:100%;padding:10px 2px;border:0;border-bottom:2px solid var(--ink);bo
 <body>
 <div id="loader" aria-hidden="true"><div class="fan big deal"></div></div>
 <main id="app"></main>
+<script src="game.js"></script>
 <script>
 // Fan suit pictures from Bela Blok (German-suited cards).
 const FAN = {
@@ -102,11 +103,12 @@ const cardHtml = c => `<span class="card ${red(c) ? 'red' : ''}"><span>${c[1] ==
 const $ = document.getElementById('app');
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
 let me = load('bela', {}), games = load('bela-history', []);
-let state = null, es = null, err = '', screen = 'home', mode = 'zatvorena';
+let state = null, es = null, err = '', screen = 'home', mode = 'zatvorena', offline = false, local = null;
 const invite = new URLSearchParams(location.search).get('room');
 if (invite) { me.room = invite.toUpperCase().slice(0, 8); screen = 'join'; history.replaceState(null, '', location.pathname); }
 
 async function api(body) {
+  if (local) return localAct(body);
   err = '';
   let out, r;
   try { r = await fetch('/api', { method: 'POST', body: JSON.stringify({ room: me.room, token: me.token, ...body }) }); out = await r.json(); }
@@ -130,14 +132,41 @@ function listen() {
   es.onmessage = e => { state = JSON.parse(e.data); saveResult(); render(); };
   es.onerror = () => { if (es.readyState === 2) { state = null; screen = 'home'; err = 'Veza prekinuta – nastavi igru ponovno'; render(); } };
 }
-function toMenu() { es?.close(); es = null; state = null; go('home'); }
+function toMenu() { es?.close(); es = null; clearTimeout(local?.timer); local = null; state = null; go('home'); }
+
+// Offline vs bots: the same engine (game.js) runs on the phone; I'm seat 0, partner bot seat 2.
+function startOffline(m) {
+  const names = ['Ana', 'Bruno', 'Cvita'].map(n => ({ name: n + ' 🤖', online: true }));
+  local = { g: Bela.newGame(m), seats: [{ name: me.name || 'Ja', online: true }, ...names], timer: null };
+  Bela.deal(local.g); publish();
+}
+function localAct(body) {
+  err = '';
+  const g = local.g;
+  try {
+    if (body.type !== 'next') Bela.act(g, 0, body);
+    else if (g.phase === 'over') Bela.deal(local.g = Object.assign(Bela.newGame(g.mode), { dealer: g.dealer }));
+    else if (g.phase === 'done') Bela.deal(g);
+  } catch (e) { err = e.message; render(); throw e; }
+  publish();
+  return {};
+}
+function publish() {
+  const g = local.g;
+  state = { seats: local.seats, you: 0, game: Bela.view(g, 0) };
+  saveResult(); render();
+  clearTimeout(local.timer);
+  const live = g.phase === 'bid' || g.phase === 'play';
+  if (g.phase === 'play' && g.trick.length === 4) local.timer = setTimeout(() => { Bela.collect(g); publish(); }, 1500);
+  else if (live && g.turn != null && g.turn !== 0) local.timer = setTimeout(() => { Bela.act(g, g.turn, Bela.botMove(g, g.turn)); publish(); }, 700);
+}
 
 // Finished game -> this device's history (and friends list, which is built from it).
 function saveResult() {
   const { seats, you, game: g } = state;
   if (g.phase !== 'over' || games.some(h => h.id === g.id)) return;
   const mine = you % 2, names = t => [t, t + 2].map(s => seats[s]?.name || '?');
-  games.unshift({ id: g.id, date: Date.now(), mode: g.mode, room: me.room, me: seats[you]?.name, us: names(mine), them: names(1 - mine),
+  games.unshift({ id: g.id, date: Date.now(), mode: g.mode, room: local ? null : me.room, me: seats[you]?.name, us: names(mine), them: names(1 - mine),
     score: [g.scores[mine], g.scores[1 - mine]], win: g.winner === mine, belot: g.belot != null });
   localStorage.setItem('bela-history', JSON.stringify(games.slice(0, 200)));
 }
@@ -153,14 +182,15 @@ const back = `<button class="back" onclick="go('home')">← Izbornik</button>`;
 function home() {
   return `<h1>Bela</h1>${fan('big')}
     ${me.token ? `<button class="btn main" onclick="join(me.room, me.name).catch(() => {})">Nastavi igru · soba ${esc(me.room)}</button>` : ''}
-    <button class="btn ${me.token ? '' : 'main'}" onclick="go('play')">Igraj</button>
+    <button class="btn ${me.token ? '' : 'main'}" onclick="offline=false;go('play')">Igraj online</button>
+    <button class="btn" onclick="offline=true;go('play')">Igraj protiv botova (offline)</button>
     <button class="btn" onclick="go('friends')">Prijatelji</button>
     <button class="btn" onclick="go('hist')">Povijest igara</button>`;
 }
 
 function play() {
-  return `${back}<h2>Način igre</h2>` + Object.entries(MODES).map(([k, [t, d]]) =>
-    `<button class="btn mode" onclick="mode='${k}';go('join')"><b>${t}</b><br><span class="small muted">${d}</span></button>`).join('');
+  return `${back}<h2>${offline ? 'Protiv botova — način igre' : 'Način igre'}</h2>` + Object.entries(MODES).map(([k, [t, d]]) =>
+    `<button class="btn mode" onclick="${offline ? `startOffline('${k}')` : `mode='${k}';go('join')`}"><b>${t}</b><br><span class="small muted">${d}</span></button>`).join('');
 }
 
 function joinScreen() {
@@ -176,7 +206,7 @@ function joinScreen() {
 
 function friends() {
   const by = {};
-  for (const g of games) for (const [list, w] of [[g.us, 'with'], [g.them, 'vs']]) for (const n of list) {
+  for (const g of games.filter(g => g.room)) for (const [list, w] of [[g.us, 'with'], [g.them, 'vs']]) for (const n of list) {
     if (n === g.me) continue;
     const f = by[n] ??= { name: n, with: 0, withWins: 0, vs: 0, vsWins: 0 };
     f[w]++; if (g.win) f[w + 'Wins']++;
@@ -192,7 +222,7 @@ function hist() {
   const wins = games.filter(g => g.win).length;
   return `${back}<h2>Povijest igara</h2>
     ${games.length ? `<p class="muted">${games.length} igara · ${wins} pobjeda</p><div class="list">${games.map(g => `<div class="item">
-      <span><span class="${g.win ? 'win' : 'loss'}">${g.win ? 'Pobjeda' : 'Poraz'}</span>${g.belot ? ' · belot' : ''} <span class="small muted">${MODES[g.mode]?.[0] || ''} · ${new Date(g.date).toLocaleDateString('hr-HR')}</span><br>
+      <span><span class="${g.win ? 'win' : 'loss'}">${g.win ? 'Pobjeda' : 'Poraz'}</span>${g.belot ? ' · belot' : ''} <span class="small muted">${MODES[g.mode]?.[0] || ''}${g.room ? '' : ' · protiv botova'} · ${new Date(g.date).toLocaleDateString('hr-HR')}</span><br>
       <span class="small">${esc(g.us.join(' & '))} vs ${esc(g.them.join(' & '))}</span></span><b>${g.score[0]}:${g.score[1]}</b></div>`).join('')}</div>`
       : fan('big deal') + '<p class="center muted">Još nema odigranih igara.</p>'}`;
 }
@@ -207,7 +237,7 @@ function renderGame() {
   const { seats, you, game: g } = state, mine = you % 2;
   const name = s => seats[s] ? esc(seats[s].name) + (seats[s].online ? '' : ' ⚠︎') : '—';
   const MV = t => t === mine ? 'Mi' : 'Vi';
-  let h = `<div class="bar"><button class="back" onclick="toMenu()">← Izbornik</button><span class="small muted">${MODES[g.mode][0]} · soba ${esc(me.room)}</span></div>
+  let h = `<div class="bar"><button class="back" onclick="toMenu()">← Izbornik</button><span class="small muted">${MODES[g.mode][0]} · ${local ? 'protiv botova' : 'soba ' + esc(me.room)}</span></div>
     <div class="bar"><span class="score">Mi ${g.scores[mine]}</span><span class="score">${g.scores[1 - mine]} Vi</span></div>`;
 
   if (g.phase === 'lobby') {
@@ -264,6 +294,7 @@ function renderGame() {
 async function leave() { await api({ type: 'leave' }).catch(() => {}); delete me.token; localStorage.setItem('bela', JSON.stringify(me)); toMenu(); }
 
 render();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); // needs https or localhost
 setTimeout(() => { const l = document.getElementById('loader'); l.classList.add('out'); setTimeout(() => l.remove(), 300); }, Math.max(0, 1300 - performance.now()));
 </script>
 </body>

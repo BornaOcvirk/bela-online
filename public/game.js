@@ -1,6 +1,7 @@
 // Bela game engine (Croatian rules), pure state machine. Seats 0..3, teams: seat % 2 (0&2 vs 1&3).
 // Play order is "next seat" = seat + 1 (shown counter-clockwise in the UI, as bela is played).
 // Cards are 2-char strings: suit (H herc, K karo, P pik, T tref) + rank (7 8 9 X J Q K A), e.g. 'HX' = 10♥.
+(function (exports) { // runs on the server (require) and in the browser (window.Bela) for offline play
 const SUITS = 'HKPT', RANKS = '789XJQKA';
 const TRUMP_ORDER = '78QKXA9J', PLAIN_ORDER = '789JQKXA';            // weakest -> strongest
 const TRUMP_PTS = { J: 20, 9: 14, A: 11, X: 10, K: 4, Q: 3 }, PLAIN_PTS = { A: 11, X: 10, K: 4, Q: 3, J: 2 };
@@ -177,4 +178,34 @@ function view(g, seat) {
   return v;
 }
 
-module.exports = { MODES, legal, trickWinner, zvanja, scoreHand, newGame, deal, act, collect, view, points, team, HAND };
+// Bots: simple rules of thumb, using only what that seat may see (its own hand and the table).
+function bidScore(hand, s) {
+  return hand.reduce((v, c) => v + (suit(c) === s ? 10 + (TRUMP_PTS[rank(c)] || 0) : rank(c) === 'A' ? 10 : 0), 0);
+}
+function botMove(g, seat) {
+  const h = g.hands[seat];
+  if (g.phase === 'bid') {
+    const best = bidOptions(g).map(s => [bidScore(h, s), s]).sort((a, b) => b[0] - a[0])[0];
+    const must = seat === g.dealer && (!g.up || g.round === 2);
+    return { type: 'bid', suit: must || best[0] >= 60 ? best[1] : null };
+  }
+  const T = g.trump, leg = legal(h, g.trick, T);
+  const val = c => points(c, T) * 10 + strength(c, T) + (suit(c) === T ? 100 : 0); // how much a card is worth keeping
+  const cheap = cs => cs.reduce((a, b) => val(b) < val(a) ? b : a), dear = cs => cs.reduce((a, b) => points(b, T) > points(a, T) ? b : a);
+  const play = card => ({ type: 'play', card });
+  if (!g.trick.length) {
+    const ace = leg.find(c => suit(c) !== T && rank(c) === 'A');
+    if (ace) return play(ace);
+    if (team(seat) === g.caller && leg.includes(T + 'J')) return play(T + 'J'); // pull trumps
+    const plain = leg.filter(c => suit(c) !== T);
+    return play(cheap(plain.length ? plain : leg));
+  }
+  const w = trickWinner(g.trick, T), last = g.trick.length === 3;
+  if (team((g.leader + w) % 4) === team(seat)) return play(last ? dear(leg) : cheap(leg)); // partner winning: add points
+  const win = leg.filter(c => beats(c, g.trick[w], T));
+  if (win.length) return play(last ? cheap(win) : win.reduce((a, b) => strength(b, T) > strength(a, T) ? b : a));
+  return play(cheap(leg));
+}
+
+Object.assign(exports, { MODES, legal, trickWinner, zvanja, scoreHand, newGame, deal, act, collect, view, points, team, botMove, HAND });
+})(typeof module !== 'undefined' ? module.exports : (window.Bela = {}));
