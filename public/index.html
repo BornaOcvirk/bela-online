@@ -50,7 +50,7 @@ body.ingame .err{color:#ffb4a9}
 .top .back{color:#f3efe2b3;font-size:15px;min-width:64px;text-align:left}
 .scores{display:flex;align-items:center;gap:10px;background:#00000038;border:1px solid #ffffff1f;border-radius:14px;padding:4px 14px}
 .scores div{text-align:center;line-height:1.05}.scores small{display:block;font-size:10px;letter-spacing:1.5px;color:#f3efe299}
-.scores b{font:700 22px var(--serif)}.scores .sep{color:#f3efe266}
+.scores b{font:700 22px var(--sans);font-variant-numeric:tabular-nums;display:block;min-width:2.2em}.scores .sep{color:#f3efe266}
 .meta{min-width:64px;text-align:right;font-size:11px;line-height:1.3;color:#f3efe299}
 /* table */
 .table{position:relative;height:322px}
@@ -98,17 +98,19 @@ body.ingame .err{color:#ffb4a9}
 /* panels on the felt */
 .panel{background:#00000030;border:1px solid #ffffff1a;border-radius:14px;padding:10px 12px;margin:10px 0;font-size:14px}
 .panel .card{width:34px;border-radius:3px;margin:1px}
-.toggle{display:flex;width:100%;justify-content:space-between;align-items:center;background:none;border:0;padding:0;color:inherit;font-size:14px;cursor:pointer}
-.toggle b{color:#fff}
+.zvb{position:absolute;top:2px;right:0;display:flex;align-items:center;gap:8px;background:#00000038;border:1px solid #ffffff1f;border-radius:12px;padding:5px 10px;font-size:11px;line-height:1.15;color:#f3efe2b3;text-align:left;cursor:pointer;z-index:3}
+.zvb b{display:block;color:#f3efe2;font-size:13px}
+.zvlist{position:absolute;top:48px;right:0;z-index:3;width:min(330px,100%);background:var(--panel);color:var(--ink);border-radius:14px;padding:6px 12px;box-shadow:0 10px 30px #0008}
+.zvlist .zrow{border-color:var(--line)}.zvlist .card{width:34px;border-radius:3px;margin:1px}
 .zrow{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #ffffff14}
 .zrow:first-of-type{border-top:0}
-.zrow .who{width:76px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.zrow .zc{flex:1}.zrow b{font:700 16px var(--serif)}
+.zrow .who{width:76px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.zrow .zc{flex:1}.zrow b{font:700 16px var(--sans);font-variant-numeric:tabular-nums;min-width:2.4em;text-align:center}
 .result{background:var(--panel);color:var(--ink);border:0}
-.result .ptitle{font:700 20px var(--serif);color:var(--green);text-align:center;margin-bottom:6px}
+.result .ptitle{font:700 20px var(--serif);color:var(--green);margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:8px}
 .result table{width:100%;border-collapse:collapse;font-size:15px}
-.result td,.result th{padding:6px 4px;text-align:right}.result td:first-child,.result th:first-child{text-align:left;color:var(--soft)}
-.result tr+tr td{border-top:1px solid var(--line)}.result .tot td{font:700 18px var(--serif);color:var(--ink)}
-.badge{display:inline-block;background:var(--bad);color:#fff;border-radius:6px;padding:1px 8px;font:600 12px var(--sans);margin:0 3px;vertical-align:middle}
+.result td,.result th{padding:6px 4px;text-align:center;width:28%;font-variant-numeric:tabular-nums}.result td:first-child,.result th:first-child{text-align:left;color:var(--soft);width:auto}
+.result tr+tr td{border-top:1px solid var(--line)}.result .tot td{font:700 18px var(--sans);color:var(--ink)}.result .tot td:first-child{color:var(--ink)}
+.badge{background:var(--bad);color:#fff;border-radius:6px;padding:3px 8px;font:700 11px/1 var(--sans);letter-spacing:.5px;text-transform:uppercase}
 .big{text-align:center;font:700 30px var(--serif);margin:8px 0}
 .hands{font-size:12px;color:var(--soft);text-align:center;margin-top:6px}
 /* pop-up (zvanja, bela) */
@@ -281,7 +283,7 @@ function hist() {
   return `${back}<h2>Povijest igara</h2>
     ${games.length ? `<p class="muted">${games.length} igara · ${wins} pobjeda</p><div class="list">${games.map(g => `<div class="item">
       <span><span class="${g.win ? 'win' : 'loss'}">${g.win ? 'Pobjeda' : 'Poraz'}</span>${g.belot ? ' · belot' : ''} <span class="small muted">${MODES[g.mode]?.[0] || ''}${g.room ? '' : ' · protiv botova'} · ${new Date(g.date).toLocaleDateString('hr-HR')}</span><br>
-      <span class="small">${esc(g.us.join(' & '))} vs ${esc(g.them.join(' & '))}</span></span><b style="font-family:var(--serif);font-size:18px">${g.score[0]}:${g.score[1]}</b></div>`).join('')}</div>`
+      <span class="small">${esc(g.us.join(' & '))} vs ${esc(g.them.join(' & '))}</span></span><b style="font-size:17px;font-variant-numeric:tabular-nums">${g.score[0]}:${g.score[1]}</b></div>`).join('')}</div>`
       : fan('big deal') + '<p class="center muted">Još nema odigranih igara.</p>'}`;
 }
 
@@ -300,7 +302,7 @@ function pop(html, ms) {
 function renderGame() {
   const { seats, you, game: g } = state, mine = you % 2;
   const name = s => seats[s] ? esc(seats[s].name) : '—';
-  const MV = t => t === mine ? 'Mi' : 'Vi';
+  const MV = t => t === mine ? 'MI' : 'VI';
   const call = (type, extra = '') => `api({type:'${type}'${extra}}).catch(() => {})`;
   // Countdown for whoever is on turn; the server's clock is converted to ours.
   const timer = () => {
@@ -323,7 +325,7 @@ function renderGame() {
   // Pop-ups: zvanja at the start of play, bela when it is called.
   const key = g.id + ':' + g.history.length;
   if (g.phase === 'play' && g.zv?.team != null && !g.last && !shown.has(key + 'zv')) {
-    shown.add(key + 'zv'); pop(`<h3>Zvanja · ${MV(g.zv.team)} ${g.zv.sum}</h3>${zvHtml()}`, Bela.ZVANJA_MS - 500);
+    shown.add(key + 'zv'); zvOpen = false; pop(`<h3>Zvanja · ${MV(g.zv.team)} ${g.zv.sum}</h3>${zvHtml()}`, Bela.ZVANJA_MS - 500);
   }
   [0, 1].forEach(t => { if (g.bela?.[t] && !shown.has(key + 'bela' + t)) { shown.add(key + 'bela' + t); pop(`<h3>Bela!</h3><p class="center">${MV(t)} +20</p>`, 2500); } });
 
@@ -341,6 +343,8 @@ function renderGame() {
 
   h += `<section class="table ${myTurn ? 'myturn' : ''}">${[0, 1, 2, 3].map(seat).join('')}
     <div class="mid">${Object.entries(played).map(([s, c]) => cardHtml(c, mini[pos(+s)])).join('')}${g.phase === 'bid' && g.up && !myTurn ? cardHtml(g.up) : ''}</div>
+    ${g.zv?.team != null && (g.phase === 'play' || g.phase === 'done') ? `<button class="zvb" onclick="zvOpen=!zvOpen;render()" aria-expanded="${zvOpen}"><span>Zvanja<b>${MV(g.zv.team)} ${g.zv.sum}</b></span>${zvOpen ? '▴' : '▾'}</button>
+      ${zvOpen ? `<div class="zvlist" onclick="zvOpen=false;render()">${zvHtml()}</div>` : ''}` : ''}
     ${g.trump ? `<div class="trump"><img src="suits/${g.trump}.png" alt=""><span>Adut<b>${SUITNAME[g.trump]}</b>zvali ${MV(g.caller)}</span></div>` : ''}`;
   if (g.phase === 'bid' && myTurn) {
     const mustCall = you === g.dealer && (!g.up || g.round === 2);
@@ -356,10 +360,8 @@ function renderGame() {
   h += `<div class="status ${myTurn ? 'myturn' : ''}">${status}${myTurn ? timer() : ''}</div>`;
 
   if (g.hand && g.phase !== 'done' && g.phase !== 'over') h += `<div class="hand ${myTurn && g.phase === 'play' ? 'myturn' : ''}">${g.hand.map(c => `<button ${g.legal.includes(c) ? '' : 'disabled'} onclick="${call('play', `,card:'${c}'`)}" aria-label="${RANKNAME[c[1]]} ${SUITNAME[c[0]]}">${cardHtml(c)}</button>`).join('')}
-    ${g.phase === 'bid' && g.mode === 'zatvorena' ? '<button disabled aria-label="skrivena karta"><span class="card back"></span></button>'.repeat(2) : ''}</div>`;
+    ${g.phase === 'bid' ? '<button disabled aria-label="karta dolazi nakon zvanja"><span class="card back"></span></button>'.repeat(g.up && you === g.dealer ? 1 : 2) : ''}</div>`;
 
-  if (g.zv?.team != null && (g.phase === 'play' || g.phase === 'done'))
-    h += `<div class="panel"><button class="toggle" onclick="zvOpen=!zvOpen;render()"><span>Zvanja · <b>${MV(g.zv.team)} ${g.zv.sum}</b></span><span>${zvOpen ? 'Sakrij ▴' : 'Prikaži ▾'}</span></button>${zvOpen ? `<div style="margin-top:8px">${zvHtml()}</div>` : ''}</div>`;
   if (g.bela?.some(Boolean) && g.phase === 'play') h += `<div class="panel">Bela · <b>${MV(g.bela[mine] ? mine : 1 - mine)} +20</b></div>`;
   if (g.last && g.phase === 'play') h += `<div class="panel">Zadnji štih → <b>${name(g.last.winner)}</b><div style="margin-top:6px">${g.last.cards.map(c => cardHtml(c)).join('')}</div></div>`;
 
@@ -367,7 +369,7 @@ function renderGame() {
     const r = g.result;
     h += `<div class="panel result">`;
     if (r) h += `<div class="ptitle">Rezultat ruke ${r.fell ? '<span class="badge">Pad</span>' : ''}${r.stiglja != null ? '<span class="badge" style="background:var(--green2)">Štiglja</span>' : ''}</div>
-      <table><tr><th></th><th>Mi</th><th>Vi</th></tr>
+      <table><tr><th></th><th>MI</th><th>VI</th></tr>
       <tr><td>Karte</td><td>${r.cards[mine]}</td><td>${r.cards[1 - mine]}</td></tr>
       <tr><td>Zvanja i bela</td><td>${r.zv[mine]}</td><td>${r.zv[1 - mine]}</td></tr>
       <tr class="tot"><td>Ruka</td><td>${r.score[mine]}</td><td>${r.score[1 - mine]}</td></tr></table>`;

@@ -48,7 +48,7 @@ assert.throws(() => { const g = G.newGame(); G.deal(g); G.act(g, g.turn, { type:
 // otvorena: dealer sees 7 + face-up card; round 1 only its suit, round 2 the other three, then dealer must call
 { const g = G.newGame('otvorena'); G.deal(g);
   const d = g.dealer, up = g.up, us = up[0];
-  assert.strictEqual(G.view(g, d).hand.length, 7); assert.strictEqual(G.view(g, (d + 1) % 4).hand.length, 8);
+  assert.ok([0, 1, 2, 3].every(x => G.view(g, x).hand.length === 6)); // last 2 only after the call
   assert.deepStrictEqual(G.view(g, g.turn).bids, [us]);
   for (let i = 0; i < 4; i++) G.act(g, g.turn, { type: 'bid', suit: null }); // everyone passes round 1, dealer too
   assert.strictEqual(g.round, 2);
@@ -84,4 +84,11 @@ assert.throws(() => { const g = G.newGame(); G.deal(g); G.act(g, g.turn, { type:
   assert.strictEqual(G.nextTimer(g, () => true).ms < G.TURN_MS && g.deadline, null);
   for (let k = 0; k < 100 && (t = G.nextTimer(g, () => false)); k++) t.run();
   assert.ok(g.phase === 'done' || g.phase === 'over'); }
+
+// time-out: weakest legal card; passes the call unless the dealer must call
+{ const g = { phase: 'play', trump: 'H', trick: ['P8'], hands: [['PA', 'P7', 'PX']], turn: 0 };
+  assert.deepStrictEqual(G.timeoutMove(g, 0), { type: 'play', card: 'PX' });  // must beat the 8: 10 or A -> the 10
+  const b = G.newGame('zatvorena'); G.deal(b);
+  assert.deepStrictEqual(G.timeoutMove(b, b.turn), { type: 'bid', suit: null });
+  b.turn = b.dealer; assert.ok('HKPT'.includes(G.timeoutMove(b, b.dealer).suit)); }
 console.log('ok');

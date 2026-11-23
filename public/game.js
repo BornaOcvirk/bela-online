@@ -82,9 +82,9 @@ function newGame(mode = 'zatvorena') {
 
 function deal(g, deck = shuffled()) {
   g.dealer = (g.dealer + 1) % 4;
-  const seen = s => g.mode === 'otvorena' ? (s === g.dealer ? 7 : 8) : 6; // talon = cards picked up after the call
-  g.hands = [0, 1, 2, 3].map(s => deck.slice(s * 8, s * 8 + seen(s)));
-  g.talon = [0, 1, 2, 3].map(s => deck.slice(s * 8 + seen(s), s * 8 + 8));
+  // Both modes: 6 cards while calling, the last 2 (talon) only once trump is called. Otvorena: the dealer's 7th lies face up.
+  g.hands = [0, 1, 2, 3].map(s => deck.slice(s * 8, s * 8 + 6));
+  g.talon = [0, 1, 2, 3].map(s => deck.slice(s * 8 + 6, s * 8 + 8));
   g.up = g.mode === 'otvorena' ? g.talon[g.dealer][0] : null;
   Object.assign(g, { phase: 'bid', round: 1, turn: (g.dealer + 1) % 4, trump: null, caller: null, trick: [], leader: null,
     won: [[], []], tricks: [0, 0], bela: [0, 0], zv: null, last: null, result: null });
@@ -185,6 +185,16 @@ function view(g, seat) {
 function bidScore(hand, s) {
   return hand.reduce((v, c) => v + (suit(c) === s ? 10 + (TRUMP_PTS[rank(c)] || 0) : rank(c) === 'A' ? 10 : 0), 0);
 }
+// How much a card is worth keeping: points first, then strength; any trump above any plain card.
+const weakest = (cs, T) => cs.reduce((a, b) => {
+  const val = c => points(c, T) * 10 + strength(c, T) + (suit(c) === T ? 100 : 0);
+  return val(b) < val(a) ? b : a;
+});
+// A player who runs out of time: says dalje (or, as a dealer who must call, calls like a bot) and plays the weakest legal card.
+function timeoutMove(g, seat) {
+  if (g.phase === 'bid') { const b = botMove(g, seat); return b.suit && (seat !== g.dealer || (g.up && g.round === 1)) ? { type: 'bid', suit: null } : b; }
+  return { type: 'play', card: weakest(legal(g.hands[seat], g.trick, g.trump), g.trump) };
+}
 function botMove(g, seat) {
   const h = g.hands[seat];
   if (g.phase === 'bid') {
@@ -192,9 +202,8 @@ function botMove(g, seat) {
     const must = seat === g.dealer && (!g.up || g.round === 2);
     return { type: 'bid', suit: must || best[0] >= 60 ? best[1] : null };
   }
-  const T = g.trump, leg = legal(h, g.trick, T);
-  const val = c => points(c, T) * 10 + strength(c, T) + (suit(c) === T ? 100 : 0); // how much a card is worth keeping
-  const cheap = cs => cs.reduce((a, b) => val(b) < val(a) ? b : a), dear = cs => cs.reduce((a, b) => points(b, T) > points(a, T) ? b : a);
+  const T = g.trump, leg = legal(h, g.trick, T), cheap = cs => weakest(cs, T);
+  const dear = cs => cs.reduce((a, b) => points(b, T) > points(a, T) ? b : a);
   const play = card => ({ type: 'play', card });
   if (!g.trick.length) {
     const ace = leg.find(c => suit(c) !== T && rank(c) === 'A');
@@ -219,8 +228,8 @@ function nextTimer(g, isBot) {
   const firstLead = g.phase === 'play' && !g.last && !g.trick.length && g.zv?.team != null;
   const ms = (isBot(g.turn) ? BOT_MS : TURN_MS) + (firstLead ? ZVANJA_MS : 0);
   if (!isBot(g.turn)) g.deadline = Date.now() + ms;
-  return { ms, run: () => act(g, g.turn, botMove(g, g.turn)) };
+  return { ms, run: () => act(g, g.turn, (isBot(g.turn) ? botMove : timeoutMove)(g, g.turn)) };
 }
 
-Object.assign(exports, { nextTimer, TURN_MS, ZVANJA_MS, MODES, legal, trickWinner, zvanja, scoreHand, newGame, deal, act, collect, view, points, team, botMove, HAND });
+Object.assign(exports, { timeoutMove, nextTimer, TURN_MS, ZVANJA_MS, MODES, legal, trickWinner, zvanja, scoreHand, newGame, deal, act, collect, view, points, team, botMove, HAND });
 })(typeof module !== 'undefined' ? module.exports : (window.Bela = {}));
