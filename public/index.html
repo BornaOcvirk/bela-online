@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bela">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#fbf8ef">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<title>Bela online</title>
+<style>
+@font-face{font-family:'Baloo 2';font-weight:400 800;font-display:swap;src:url(baloo-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Baloo 2';font-weight:400 800;font-display:swap;src:url(baloo-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+:root{--paper:#fbf8ef;--ink:#1b1b18;--soft:#6f6a5c;--card:#fffdf6;--green:#1f5a3c;--felt:#24603f;--on-green:#fbf8ef;--bad:#b3261e}
+*{box-sizing:border-box}
+html,body{background:var(--paper);touch-action:manipulation;-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--ink);font:500 17px/1.35 'Baloo 2',ui-rounded,system-ui,sans-serif;-webkit-tap-highlight-color:transparent;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+main{max-width:640px;margin:0 auto;padding:12px 14px 24px}
+h1{margin:8px 0;font-size:34px;line-height:1.1;color:var(--green);text-align:center}
+h2{margin:6px 0 10px;font-size:24px;color:var(--green)}
+input,button{font:inherit;color:inherit}
+input{width:100%;padding:10px 2px;border:0;border-bottom:2px solid var(--ink);border-radius:0;background:transparent;font-size:18px;-webkit-appearance:none;appearance:none}
+.btn{display:block;width:100%;min-height:48px;margin:10px 0;border:2px solid var(--ink);background:transparent;border-radius:12px;padding:10px 12px;font-size:19px;cursor:pointer}
+.btn.main{background:var(--green);border-color:var(--green);color:var(--on-green)}
+.btn:disabled{opacity:.35;cursor:default}
+.back{background:none;border:0;padding:8px 0;font-size:17px;color:var(--soft);cursor:pointer}
+.muted{color:var(--soft)}.small{font-size:14px}.center{text-align:center}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>.btn{flex:1;width:auto;margin:6px 0}
+.box{border:2px solid var(--ink);border-radius:12px;padding:10px 12px;margin:10px 0}
+.mode b{font-size:20px;color:var(--green)}.mode{text-align:left}
+.list .item{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid #0002}
+.win{color:var(--green);font-weight:700}.loss{color:var(--bad);font-weight:700}
+.err{color:var(--bad);min-height:1.4em;text-align:center}
+/* game */
+.bar{display:flex;justify-content:space-between;align-items:center;font-weight:700}
+.score{font-size:20px}
+.felt{background:var(--felt);color:var(--on-green);border-radius:18px;padding:8px;margin:8px 0}
+.table{display:grid;grid-template:". top ." auto "left mid right" 1fr ". bot ." auto/1fr 1.6fr 1fr;min-height:250px;gap:4px;text-align:center}
+.seat{padding:4px;border-radius:10px;font-size:14px;line-height:1.2;align-self:center}.seat.turn{background:#fff3;outline:2px solid #ffd54a}
+.mid{grid-area:mid;display:grid;grid-template:". t ." "l c r" ". b ."/1fr 1fr 1fr;place-items:center;min-height:170px}
+.card{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;color:#111;border-radius:7px;width:42px;height:58px;font-weight:800;font-size:19px;line-height:1;border:1px solid #0003;box-shadow:0 1px 2px #0003}
+.card.red{color:#c0261d}.card.off{background:#ddd;color:#999}
+.hand{display:flex;gap:3px;justify-content:center;margin:10px 0}
+.hand button{flex:1 1 0;max-width:56px;padding:0;border:0;background:none;cursor:pointer}
+.hand button .card{width:100%;height:auto;aspect-ratio:5/7;font-size:20px}
+.hand button:disabled{cursor:default}.hand button:disabled .card{filter:brightness(.8)}
+.myturn .hand button:not(:disabled) .card{outline:3px solid #ffd54a;transform:translateY(-4px)}
+.info{background:#0002;border-radius:10px;padding:6px 10px;margin:6px 0;font-size:15px}
+.info .card{width:30px;height:42px;font-size:14px}
+.bids{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:8px 0}
+.bids button{min-width:56px;min-height:48px;border-radius:10px;border:0;font-size:24px;background:var(--paper);color:var(--ink);cursor:pointer}
+.bids button.red{color:#c0261d}.bids button.pass{font-size:17px}
+/* fan + loader (from Bela Blok) */
+.fan{position:relative;width:104px;height:50px;flex:0 0 auto}
+.fan i{position:absolute;left:50%;top:2px;display:grid;place-items:center;width:26px;height:38px;margin-left:-13px;background:var(--card);border:1.5px solid #1b1b18;border-radius:5px;box-shadow:1px 2px 0 rgba(0,0,0,.18);transform:rotate(var(--r));transform-origin:50% 226%;transition:transform .25s}
+.fan i svg{width:17px;height:17px}
+.fan i:nth-child(1){--r:-27deg}.fan i:nth-child(2){--r:-9deg}.fan i:nth-child(3){--r:9deg}.fan i:nth-child(4){--r:27deg}
+.fan.big{width:208px;height:100px;margin:28px auto 18px}
+.fan.big i{top:4px;width:52px;height:76px;margin-left:-26px;border-radius:9px;border-width:2px}
+.fan.big i svg{width:34px;height:34px}
+#loader{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:var(--paper);transition:opacity .3s}
+#loader.out{opacity:0;pointer-events:none}
+.deal i{animation:deal 3.2s infinite}
+.deal i:nth-child(2){animation-delay:-2.4s}.deal i:nth-child(3){animation-delay:-1.6s}.deal i:nth-child(4){animation-delay:-.8s}
+@keyframes deal{
+  0%{transform:rotate(-27deg) translateY(-126%) perspective(300px) rotateX(0deg) translateY(126%);opacity:1;z-index:1;animation-timing-function:ease-in}
+  10%{transform:rotate(-27deg) translateY(-126%) perspective(300px) rotateX(82deg) translateY(126%);opacity:1;z-index:1}
+  14%{transform:rotate(-27deg) translateY(-126%) perspective(300px) rotateX(82deg) translateY(126%);opacity:0;z-index:1}
+  14.1%{transform:rotate(27deg) translateY(calc(-126% - 60px)) perspective(300px) rotateX(0deg) translateY(126%);opacity:0;z-index:4}
+  22%,35%{transform:rotate(27deg) translateY(-126%) perspective(300px) rotateX(0deg) translateY(126%);opacity:1;z-index:4}
+  45%,60%{transform:rotate(9deg) translateY(-126%) perspective(300px) rotateX(0deg) translateY(126%);opacity:1;z-index:3}
+  70%,85%{transform:rotate(-9deg) translateY(-126%) perspective(300px) rotateX(0deg) translateY(126%);opacity:1;z-index:2}
+  95%,100%{transform:rotate(-27deg) translateY(-126%) perspective(300px) rotateX(0deg) translateY(126%);opacity:1;z-index:1}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="loader" aria-hidden="true"><div class="fan big deal"></div></div>
+<main id="app"></main>
+<script>
+// Fan suit pictures from Bela Blok (German-suited cards).
+const FAN = {
+srce: '<svg class="s" viewBox="0 0 24 24" aria-hidden="true"><path fill="#e0332a" stroke="#5a120e" stroke-width="1.1" stroke-linejoin="round" d="M12 21.2C5.6 16.9 2.2 13.2 2.2 8.9A4.9 4.9 0 0 1 12 6.9a4.9 4.9 0 0 1 9.8 2c0 4.3-3.4 8-9.8 12.3z"/><path fill="#a81f1a" d="M5 15.6c2 2 4.3 3.7 7 5.6 2.7-1.9 5-3.6 7-5.6z"/></svg>',
+  zir: '<svg class="s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="20.6" r="2.4" fill="#2e8b34" stroke="#173f12" stroke-width="1"/><path fill="#8a3b1e" stroke="#3a1a08" stroke-width="1.1" stroke-linejoin="round" d="M6.3 11.2h11.4v4.2c0 2.6-2.5 4.3-5.7 4.3s-5.7-1.7-5.7-4.3z"/><path fill="#d8402a" d="M6.85 11.8h10.3v2.2H6.85z"/><path fill="#f3c51c" stroke="#3a1a08" stroke-width="1.1" stroke-linejoin="round" d="M6.8 11.2V8.4a5.2 5.2 0 0 1 10.4 0v2.8z"/><path fill="none" stroke="#fff6b8" stroke-width="1.2" stroke-linecap="round" d="M9 9.6V8.4a3 3 0 0 1 1.4-2.5"/></svg>',
+  list: '<svg class="s" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="#8a5a1c" stroke-width="1.6" stroke-linecap="round" d="M12 18.6c0 2 .6 3.4 2.2 4.4"/><path fill="#3c9a3a" d="M12 18.6C9 21 3.5 19 3.2 14 3 10.5 4 7 5 4.5c2 1.5 3.6 1.9 4.6 2.1Q10.5 4 12 1.8q1.5 2.2 2.4 4.8c1-.2 2.6-.6 4.6-2.1 1 2.5 2 6 1.8 9.5-.3 5-5.8 7-8.8 4.6z"/><path fill="#ecc935" d="M12 18.6C9 21 3.5 19 3.2 14 3 10.5 4 7 5 4.5c2 1.5 3.6 1.9 4.6 2.1Q10.5 4 12 1.8z"/><path fill="none" stroke="#1d3d14" stroke-width="1.1" stroke-linejoin="round" d="M12 18.6C9 21 3.5 19 3.2 14 3 10.5 4 7 5 4.5c2 1.5 3.6 1.9 4.6 2.1Q10.5 4 12 1.8q1.5 2.2 2.4 4.8c1-.2 2.6-.6 4.6-2.1 1 2.5 2 6 1.8 9.5-.3 5-5.8 7-8.8 4.6z"/><path fill="none" stroke="#1d3d14" stroke-width=".8" stroke-linecap="round" d="M12 4.5v14M12 9l-3.6-2M12 12.5l-5.2-2.4M12 16l-5.6-1.6M12 9l3.6-2M12 12.5l5.2-2.4M12 16l5.6-1.6"/></svg>',
+  zvono: '<svg class="s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12.5" r="9" fill="#f3c51c"/><path fill="#d8402a" d="M3.2 14.2Q12 10.4 20.4 9.3L21 12.3Q12.6 13.6 4.2 16.9z"/><path fill="none" stroke="#2e8b34" stroke-width="1.8" stroke-linecap="round" d="M10 19.2c1.1-1.4 2.2 1 3.3-.4s2.2 1 3.3-.4"/><path stroke="#3a2a05" stroke-width="2.4" stroke-linecap="round" d="M8.6 6.2l1.8 1.8"/><circle cx="12" cy="12.5" r="9" fill="none" stroke="#3a2a05" stroke-width="1.1"/></svg>',
+};
+const fan = (cls = '') => `<div class="fan ${cls}" aria-hidden="true">${Object.values(FAN).map(s => `<i>${s}</i>`).join('')}</div>`;
+document.querySelector('#loader .fan').innerHTML = Object.values(FAN).map(s => `<i>${s}</i>`).join('');
+
+const SUIT = { H: '♥', K: '♦', P: '♠', T: '♣' }, SUITNAME = { H: 'Herc', K: 'Karo', P: 'Pik', T: 'Tref' };
+const MODES = { zatvorena: ['Zatvorena', 'Vidiš 6 karata, zoveš adut, pa dobiješ zadnje 2. Ako svi kažu dalje, djelitelj mora zvati.'],
+  otvorena: ['Otvorena', 'Djeliteljeva 8. karta leži otvorena na stolu. 1. krug: može se zvati samo njezina boja. 2. krug: jedna od ostale 3 boje, djelitelj mora zvati.'] };
+const esc = s => String(s).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
+const red = c => 'HK'.includes(c[0]);
+const cardHtml = c => `<span class="card ${red(c) ? 'red' : ''}"><span>${c[1] === 'X' ? '10' : c[1]}</span><span>${SUIT[c[0]]}</span></span>`;
+const $ = document.getElementById('app');
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+let me = load('bela', {}), games = load('bela-history', []);
+let state = null, es = null, err = '', screen = 'home', mode = 'zatvorena';
+const invite = new URLSearchParams(location.search).get('room');
+if (invite) { me.room = invite.toUpperCase().slice(0, 8); screen = 'join'; history.replaceState(null, '', location.pathname); }
+
+async function api(body) {
+  err = '';
+  let out, r;
+  try { r = await fetch('/api', { method: 'POST', body: JSON.stringify({ room: me.room, token: me.token, ...body }) }); out = await r.json(); }
+  catch { out = { error: 'Nema veze sa serverom' }; }
+  if (!r?.ok) { err = out.error; render(); throw new Error(out.error); }
+  return out;
+}
+
+async function join(room, name, m = mode) {
+  me = { ...me, room: room.trim().toUpperCase(), name: name.trim() };
+  if (me.room !== load('bela', {}).room) delete me.token; // a token only belongs to its own room
+  const out = await api({ type: 'join', room: me.room, name: me.name, mode: m });
+  me.token = out.token; me.room = out.room;
+  localStorage.setItem('bela', JSON.stringify(me));
+  listen();
+}
+
+function listen() {
+  es?.close();
+  es = new EventSource(`/events?room=${encodeURIComponent(me.room)}&token=${encodeURIComponent(me.token)}`);
+  es.onmessage = e => { state = JSON.parse(e.data); saveResult(); render(); };
+  es.onerror = () => { if (es.readyState === 2) { state = null; screen = 'home'; err = 'Veza prekinuta – nastavi igru ponovno'; render(); } };
+}
+function toMenu() { es?.close(); es = null; state = null; go('home'); }
+
+// Finished game -> this device's history (and friends list, which is built from it).
+function saveResult() {
+  const { seats, you, game: g } = state;
+  if (g.phase !== 'over' || games.some(h => h.id === g.id)) return;
+  const mine = you % 2, names = t => [t, t + 2].map(s => seats[s]?.name || '?');
+  games.unshift({ id: g.id, date: Date.now(), mode: g.mode, room: me.room, me: seats[you]?.name, us: names(mine), them: names(1 - mine),
+    score: [g.scores[mine], g.scores[1 - mine]], win: g.winner === mine, belot: g.belot != null });
+  localStorage.setItem('bela-history', JSON.stringify(games.slice(0, 200)));
+}
+
+const go = s => { screen = s; err = ''; render(); };
+function render() {
+  if (state) return renderGame();
+  draw({ home, play, join: joinScreen, friends, hist }[screen]());
+}
+function draw(h) { $.innerHTML = h + `<div class="err" role="alert">${esc(err)}</div>`; }
+const back = `<button class="back" onclick="go('home')">← Izbornik</button>`;
+
+function home() {
+  return `<h1>Bela</h1>${fan('big')}
+    ${me.token ? `<button class="btn main" onclick="join(me.room, me.name).catch(() => {})">Nastavi igru · soba ${esc(me.room)}</button>` : ''}
+    <button class="btn ${me.token ? '' : 'main'}" onclick="go('play')">Igraj</button>
+    <button class="btn" onclick="go('friends')">Prijatelji</button>
+    <button class="btn" onclick="go('hist')">Povijest igara</button>`;
+}
+
+function play() {
+  return `${back}<h2>Način igre</h2>` + Object.entries(MODES).map(([k, [t, d]]) =>
+    `<button class="btn mode" onclick="mode='${k}';go('join')"><b>${t}</b><br><span class="small muted">${d}</span></button>`).join('');
+}
+
+function joinScreen() {
+  return `${back}<h2>${invite ? 'Poziv u sobu' : MODES[mode][0]}</h2>
+    <label class="small muted" for="roomIn">Kod sobe — svi upisuju isti</label>
+    <div class="row"><input id="roomIn" value="${esc(me.room || '')}" maxlength="8" autocapitalize="characters" autocomplete="off" style="flex:1">
+      <button class="back" onclick="roomIn.value=Math.random().toString(36).slice(2,6).toUpperCase()">nova soba</button></div>
+    <label class="small muted" for="nameIn">Tvoje ime</label>
+    <input id="nameIn" value="${esc(me.name || '')}" maxlength="20" autocomplete="nickname">
+    <button class="btn main" onclick="join(roomIn.value, nameIn.value).catch(() => {})">Uđi u sobu</button>
+    <p class="small muted">Ako soba već postoji, igra se njezin način igre.</p>`;
+}
+
+function friends() {
+  const by = {};
+  for (const g of games) for (const [list, w] of [[g.us, 'with'], [g.them, 'vs']]) for (const n of list) {
+    if (n === g.me) continue;
+    const f = by[n] ??= { name: n, with: 0, withWins: 0, vs: 0, vsWins: 0 };
+    f[w]++; if (g.win) f[w + 'Wins']++;
+  }
+  const rows = Object.values(by).sort((a, b) => b.with + b.vs - a.with - a.vs);
+  return `${back}<h2>Prijatelji</h2>
+    <p class="small muted">Svi s kojima si igrao na ovom uređaju. Za igru s njima: Igraj → upiši kod sobe → „Pozovi” u sobi.</p>
+    ${rows.length ? `<div class="list">${rows.map(f => `<div class="item"><b>${esc(f.name)}</b><span class="small">
+      s njim ${f.withWins}/${f.with} pobjeda · protiv ${f.vsWins}/${f.vs}</span></div>`).join('')}</div>` : fan('big deal') + '<p class="center muted">Još nema prijatelja — odigraj prvu igru.</p>'}`;
+}
+
+function hist() {
+  const wins = games.filter(g => g.win).length;
+  return `${back}<h2>Povijest igara</h2>
+    ${games.length ? `<p class="muted">${games.length} igara · ${wins} pobjeda</p><div class="list">${games.map(g => `<div class="item">
+      <span><span class="${g.win ? 'win' : 'loss'}">${g.win ? 'Pobjeda' : 'Poraz'}</span>${g.belot ? ' · belot' : ''} <span class="small muted">${MODES[g.mode]?.[0] || ''} · ${new Date(g.date).toLocaleDateString('hr-HR')}</span><br>
+      <span class="small">${esc(g.us.join(' & '))} vs ${esc(g.them.join(' & '))}</span></span><b>${g.score[0]}:${g.score[1]}</b></div>`).join('')}</div>`
+      : fan('big deal') + '<p class="center muted">Još nema odigranih igara.</p>'}`;
+}
+
+async function share() {
+  const url = `${location.origin}/?room=${encodeURIComponent(me.room)}`;
+  try { if (navigator.share) await navigator.share({ title: 'Bela', text: `Igraj belu sa mnom, soba ${me.room}`, url }); else { await navigator.clipboard.writeText(url); err = 'Poveznica kopirana'; render(); } }
+  catch { /* user closed the share sheet */ }
+}
+
+function renderGame() {
+  const { seats, you, game: g } = state, mine = you % 2;
+  const name = s => seats[s] ? esc(seats[s].name) + (seats[s].online ? '' : ' ⚠︎') : '—';
+  const MV = t => t === mine ? 'Mi' : 'Vi';
+  let h = `<div class="bar"><button class="back" onclick="toMenu()">← Izbornik</button><span class="small muted">${MODES[g.mode][0]} · soba ${esc(me.room)}</span></div>
+    <div class="bar"><span class="score">Mi ${g.scores[mine]}</span><span class="score">${g.scores[1 - mine]} Vi</span></div>`;
+
+  if (g.phase === 'lobby') {
+    h += `<p class="small muted">Partneri sjede nasuprot: mjesta 1 i 3 protiv 2 i 4. Dodirni prazno mjesto da sjedneš.</p>`;
+    h += [0, 1, 2, 3].map(s => `<div class="box row"><b>Mjesto ${s + 1}</b><span class="muted small">${s % 2 ? 'tim B' : 'tim A'}</span><span style="flex:1;text-align:right">${seats[s] ? name(s) + (s === you ? ' (ti)' : '')
+      : `<button class="back" onclick="api({type:'sit',seat:${s}}).catch(() => {})">Sjedni ovdje</button>`}</span></div>`).join('');
+    h += `<button class="btn" onclick="share()">Pozovi prijatelje</button>
+      <div class="row"><button class="btn main" onclick="api({type:'start'}).catch(() => {})" ${seats.includes(null) ? 'disabled' : ''}>Počni igru</button>
+      <button class="btn" onclick="leave()">Izađi iz sobe</button></div>`;
+    return draw(h);
+  }
+
+  // Table, me at the bottom; next seat to my right (counter-clockwise play).
+  const pos = s => ['bot', 'right', 'top', 'left'][(s - you + 4) % 4], mini = { bot: 'b', right: 'r', top: 't', left: 'l' };
+  const played = {};
+  (g.trick || []).forEach((c, i) => played[(g.leader + i) % 4] = c);
+  h += `<div class="felt ${g.turn === you ? 'myturn' : ''}">`;
+  if (g.trump) h += `<div class="info">Adut <b>${SUIT[g.trump]} ${SUITNAME[g.trump]}</b> · zvali ${MV(g.caller)}</div>`;
+  h += `<div class="table">`;
+  for (let s = 0; s < 4; s++) if (s !== you) h += `<div class="seat ${g.turn === s ? 'turn' : ''}" style="grid-area:${pos(s)}">${name(s)}${s === g.dealer ? ' · miješa' : ''}<br><span class="small">${g.counts?.[s] ?? 0} karata · ${MV(s % 2)}</span></div>`;
+  h += `<div class="mid">${Object.entries(played).map(([s, c]) => `<div style="grid-area:${mini[pos(+s)]}">${cardHtml(c)}</div>`).join('')}
+    ${g.phase === 'bid' && g.up ? `<div style="grid-area:c">${cardHtml(g.up)}</div>` : ''}</div>`;
+  h += `<div class="seat ${g.turn === you ? 'turn' : ''}" style="grid-area:bot">${name(you)} (ti)${you === g.dealer ? ' · miješaš' : ''}</div></div>`;
+
+  if (g.phase === 'bid') {
+    const mustCall = you === g.dealer && (!g.up || g.round === 2);
+    const label = g.up ? (g.round === 1 ? `1. krug — samo boja karte na stolu` : `2. krug — bilo koja osim ${SUIT[g.up[0]]}`) : 'Zovi adut';
+    h += g.turn === you
+      ? `<div class="center">${label}${mustCall ? ' · <b>moraš zvati</b>' : ''}</div><div class="bids">${g.bids.map(s =>
+          `<button class="${'HK'.includes(s) ? 'red' : ''}" onclick="api({type:'bid',suit:'${s}'}).catch(() => {})" aria-label="${SUITNAME[s]}">${SUIT[s]}</button>`).join('')}
+          ${mustCall ? '' : `<button class="pass" onclick="api({type:'bid',suit:null}).catch(() => {})">Dalje</button>`}</div>`
+      : `<div class="center">${g.up ? (g.round === 1 ? '1. krug' : '2. krug') + ' · ' : ''}zove ${name(g.turn)}</div>`;
+  }
+  if (g.hand) h += `<div class="hand">${g.hand.map(c => `<button ${g.legal.includes(c) ? '' : 'disabled'} onclick="api({type:'play',card:'${c}'}).catch(() => {})" aria-label="${c}">${cardHtml(c)}</button>`).join('')}
+    ${g.phase === 'bid' && g.mode === 'zatvorena' ? '<button disabled><span class="card off">?</span></button>'.repeat(2) : ''}</div>`;
+
+  if (g.zv && g.zv.team != null && g.phase === 'play' && g.counts?.[you] >= 7) // shown during the first trick
+    h += `<div class="info">Zvanja ${MV(g.zv.team)} (${g.zv.sum}): ${g.zv.list.map((zs, s) => zs.map(z => `${name(s)} ${z.pts} ${z.cards.map(cardHtml).join('')}`).join(' · ')).filter(Boolean).join(' · ')}</div>`;
+  if (g.bela?.some(Boolean)) h += `<div class="info">Bela (20): ${MV(g.bela[mine] ? mine : 1 - mine)}</div>`;
+  if (g.last && g.phase === 'play') h += `<div class="info">Zadnji štih → ${name(g.last.winner)}: ${g.last.cards.map(cardHtml).join(' ')}</div>`;
+
+  if (g.result && (g.phase === 'done' || g.phase === 'over')) {
+    const r = g.result;
+    h += `<div class="info">Karte: Mi ${r.cards[mine]} · Vi ${r.cards[1 - mine]} &nbsp; Zvanja: Mi ${r.zv[mine]} · Vi ${r.zv[1 - mine]}<br>
+      ${r.stiglja != null ? `<b>Štiglja!</b> (${MV(r.stiglja)}) ` : ''}${r.fell ? `<b>Pad!</b> ` : ''}Ruka: <b>Mi ${r.score[mine]} · Vi ${r.score[1 - mine]}</b></div>`;
+  }
+  h += `</div>`;
+  if (g.phase === 'done') h += `<button class="btn main" onclick="api({type:'next'}).catch(() => {})">Sljedeća ruka</button>`;
+  if (g.phase === 'over') h += `<div class="box center"><b>${g.belot != null ? 'BELOT! ' : ''}${g.winner === mine ? 'Pobjeda!' : 'Poraz'}</b></div><button class="btn main" onclick="api({type:'next'}).catch(() => {})">Nova igra</button>`;
+  if (g.history?.length) h += `<p class="small muted">Ruke: ${g.history.map(s => `${s[mine]}:${s[1 - mine]}`).join(' · ')}</p>`;
+  draw(h);
+}
+
+async function leave() { await api({ type: 'leave' }).catch(() => {}); delete me.token; localStorage.setItem('bela', JSON.stringify(me)); toMenu(); }
+
+render();
+setTimeout(() => { const l = document.getElementById('loader'); l.classList.add('out'); setTimeout(() => l.remove(), 300); }, Math.max(0, 1300 - performance.now()));
+</script>
+</body>
+</html>

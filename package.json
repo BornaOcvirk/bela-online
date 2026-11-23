@@ -1,0 +1,7 @@
+{
+  "name": "bela-online",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bela za 4 igrača na 4 uređaja (prototip)",
+  "scripts": { "start": "node server.js", "test": "node test.js" }
+}
